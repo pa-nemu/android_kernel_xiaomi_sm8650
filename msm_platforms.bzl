@@ -50,6 +50,4 @@ def define_msm_platforms():
     define_pitti()
     define_anorak()
     define_neo_la()
-    define_neo_tuivm()
     define_mdm9607()
-    define_neo_le()
