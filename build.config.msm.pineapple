@@ -31,9 +31,3 @@ KERNEL_VENDOR_CMDLINE+=' bootconfig '
 ## Inheriting MSM configs
 . ${KERNEL_DIR}/build.config.msm.common
 . ${KERNEL_DIR}/build.config.msm.gki
-
-if [ "${VARIANT}" = "gki" ]; then
-	apply_defconfig_fragment ${KERNEL_DIR}/arch/${ARCH}/configs/vendor/peridot_GKI.config vendor/pineapple-gki_defconfig
-elif [ "${VARIANT}" = "consolidate" ]; then
-	apply_defconfig_fragment ${KERNEL_DIR}/arch/${ARCH}/configs/vendor/peridot_consolidate.config vendor/pineapple-consolidate_defconfig
-fi

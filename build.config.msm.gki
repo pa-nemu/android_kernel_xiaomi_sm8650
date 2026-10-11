@@ -47,6 +47,9 @@ append_cmd POST_DEFCONFIG_CMDS 'sanity_check_abi'
 function build_defconfig_fragments() {
 	if [[ "${VARIANT}" =~ ^(gki|consolidate)$ ]]; then
 		apply_defconfig_fragment ${KERNEL_DIR}/arch/${ARCH}/configs/vendor/${MSM_ARCH}_GKI.config vendor/${MSM_ARCH}-gki_defconfig
+		if [ "${MSM_ARCH}" = "pineapple" ]; then
+			apply_defconfig_fragment ${KERNEL_DIR}/arch/${ARCH}/configs/vendor/peridot_GKI.config vendor/${MSM_ARCH}-gki_defconfig
+		fi
 		if [ "${VARIANT}" = gki ]; then
 			return
 		fi
@@ -56,6 +59,9 @@ function build_defconfig_fragments() {
 		unset ABI_DEFINITION
 		apply_defconfig_fragment ${KERNEL_DIR}/arch/${ARCH}/configs/consolidate.fragment consolidate_defconfig
 		apply_defconfig_fragment ${KERNEL_DIR}/arch/${ARCH}/configs/vendor/${MSM_ARCH}_consolidate.config vendor/${MSM_ARCH}-consolidate_defconfig
+		if [ "${MSM_ARCH}" = "pineapple" ]; then
+			apply_defconfig_fragment ${KERNEL_DIR}/arch/${ARCH}/configs/vendor/peridot_consolidate.config vendor/${MSM_ARCH}-consolidate_defconfig
+		fi
 	elif [ "${VARIANT}" = gki-ack ]; then
 		# In gki-only, then using ACK's GKI config directly
 		. ${KERNEL_DIR}/build.config.gki
