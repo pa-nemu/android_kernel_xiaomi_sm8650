@@ -17,10 +17,12 @@
 #include <linux/nvmem-consumer.h>
 #include <linux/of_device.h>
 #include <linux/of_platform.h>
+#include <linux/panic_notifier.h>
 
 struct qcom_reboot_reason {
 	struct device *dev;
 	struct notifier_block reboot_nb;
+	struct notifier_block panic_nb;
 	struct nvmem_cell *nvmem_cell;
 	struct poweroff_reason *reasons;
 };
@@ -38,8 +40,12 @@ static struct poweroff_reason pon_reasons[] = {
 	{ "dm-verity device corrupted",	0x04, 0x1 },
 	{ "dm-verity enforcing",	0x05, 0x1 },
 	{ "keys clear",			0x06, 0x1 },
+	{ "ffu", 0x41, 0x1 },
+	{ "panic", 0x21, 0x1 },
+	{ "cma alloc fail", 0x23, 0x1 },
+	{ "bios", 0x30, 0x1 },
 	{ "shipmode",			0x20, 0x2 },
-	{}
+	{ NULL, 0x20, 0x1 }
 };
 
 static  struct poweroff_reason imem_pon_reasons[] = {
@@ -59,33 +65,58 @@ static const struct of_device_id of_qcom_reboot_reason_match[] = {
 };
 MODULE_DEVICE_TABLE(of, of_qcom_reboot_reason_match);
 
-static int qcom_reboot_reason_reboot(struct notifier_block *this,
-				     unsigned long event, void *ptr)
-{
-	int rc;
-	char *cmd = ptr;
-	struct qcom_reboot_reason *reboot = container_of(this,
-		struct qcom_reboot_reason, reboot_nb);
-	struct poweroff_reason *reason;
+static struct qcom_reboot_reason *ffu_reboot;
 
-	if (!cmd)
-		return NOTIFY_OK;
+static int store_reboot_reason(struct qcom_reboot_reason *reboot, const char *cmd)
+{
+	struct poweroff_reason *reason;
 
 	if (of_device_is_compatible(reboot->dev->of_node, "qcom,imem-reboot-reason"))
 		reboot_mode = REBOOT_WARM;
 
 	for (reason = reboot->reasons; reason->cmd; reason++) {
-		if (!strcmp(cmd, reason->cmd)) {
-			rc = nvmem_cell_write(reboot->nvmem_cell,
-					 &reason->pon_reason,
-					 reason->size);
-			if (rc < 0)
-				pr_err("PON reason store failed, rc=%d\n", rc);
+		if (cmd && !strcmp(cmd, reason->cmd))
 			break;
-		}
 	}
-
+	if (reason->size)
+		nvmem_cell_write(reboot->nvmem_cell, &reason->pon_reason, reason->size);
 	return NOTIFY_OK;
+}
+
+int ufs_ffu_reboot_reason_reboot(void *ptr)
+{
+	if (!ffu_reboot)
+		return NOTIFY_BAD;
+	return store_reboot_reason(ffu_reboot, ptr);
+}
+EXPORT_SYMBOL(ufs_ffu_reboot_reason_reboot);
+
+static int qcom_reboot_reason_reboot(struct notifier_block *this,
+				     unsigned long event, void *ptr)
+{
+	struct qcom_reboot_reason *reboot = container_of(this,
+		struct qcom_reboot_reason, reboot_nb);
+	const char *cmd = ptr;
+
+	if (cmd && !strcmp(cmd, "dm-verity device corrupted"))
+		panic("%s", cmd);
+	return store_reboot_reason(reboot, cmd);
+}
+
+static int panic_prep_restart(struct notifier_block *this,
+			      unsigned long event, void *ptr)
+{
+	struct qcom_reboot_reason *reboot = container_of(this,
+		struct qcom_reboot_reason, panic_nb);
+	const char *cmd = ptr;
+
+	if (cmd && !strcmp(cmd, "dm-verity device corrupted"))
+		store_reboot_reason(reboot, "dm-verity device corrupted");
+	else if (cmd && !strcmp(cmd, "panic for failing to allocate cma memory"))
+		store_reboot_reason(reboot, "cma alloc fail");
+	else
+		store_reboot_reason(reboot, "panic");
+	return NOTIFY_DONE;
 }
 
 static int qcom_reboot_reason_probe(struct platform_device *pdev)
@@ -121,6 +152,12 @@ static int qcom_reboot_reason_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, reboot);
 
+	reboot->panic_nb.notifier_call = panic_prep_restart;
+	reboot->panic_nb.priority = INT_MAX;
+	atomic_notifier_chain_register(&panic_notifier_list, &reboot->panic_nb);
+
+	ffu_reboot = reboot;
+
 	return 0;
 }
 
@@ -128,6 +165,9 @@ static int qcom_reboot_reason_remove(struct platform_device *pdev)
 {
 	struct qcom_reboot_reason *reboot = platform_get_drvdata(pdev);
 
+	if (ffu_reboot == reboot)
+		ffu_reboot = NULL;
+	atomic_notifier_chain_unregister(&panic_notifier_list, &reboot->panic_nb);
 	unregister_reboot_notifier(&reboot->reboot_nb);
 
 	return 0;
