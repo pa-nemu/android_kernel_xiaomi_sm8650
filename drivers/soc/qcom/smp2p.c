@@ -276,8 +276,6 @@ static void qcom_smp2p_notify_in(struct qcom_smp2p *smp2p)
 		mb();
 		status |= *entry->irq_pending;
 
-		SMP2P_INFO("%d:\t%s: status:%0lx val:%0x\n",
-			   smp2p->remote_pid, entry->name, status, val);
 
 		/* No changes of this entry? */
 		if (!status)

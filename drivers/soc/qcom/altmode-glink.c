@@ -699,6 +699,7 @@ static int altmode_probe(struct platform_device *pdev)
 	struct pmic_glink_client_data pgclient_data = { };
 	struct device *dev = &pdev->dev;
 
+
 	amdev = devm_kzalloc(&pdev->dev, sizeof(*amdev), GFP_KERNEL);
 	if (!amdev)
 		return -ENOMEM;
