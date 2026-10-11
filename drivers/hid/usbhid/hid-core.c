@@ -1428,6 +1428,7 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
 		goto err_free;
 	}
 
+
 	return 0;
 err_free:
 	kfree(usbhid);
