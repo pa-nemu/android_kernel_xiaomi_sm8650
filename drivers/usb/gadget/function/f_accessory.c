@@ -942,6 +942,7 @@ static int acc_hid_probe(struct hid_device *hdev,
 {
 	int ret;
 
+
 	ret = hid_parse(hdev);
 	if (ret)
 		return ret;
@@ -1127,8 +1128,9 @@ __acc_function_bind(struct usb_configuration *c,
 		dev->cdev = c->cdev;
 	}
 	ret = hid_register_driver(&acc_hid_driver);
-	if (ret)
+	if (ret){
 		return ret;
+	}
 
 	dev->start_requested = 0;
 
@@ -1250,6 +1252,7 @@ static int acc_hid_init(struct acc_hid_dev *hdev)
 {
 	struct hid_device *hid;
 	int ret;
+
 
 	hid = hid_allocate_device();
 	if (IS_ERR(hid))
@@ -1397,6 +1400,7 @@ static int acc_setup(void)
 	struct acc_dev *dev;
 	int ret;
 
+
 	if (kref_read(&ref->kref))
 		return -EBUSY;
 
@@ -1424,8 +1428,9 @@ static int acc_setup(void)
 	}
 
 	ret = misc_register(&acc_device);
-	if (ret)
+	if (ret){
 		goto err_zap_ptr;
+	}
 
 	kref_init(&ref->kref);
 	return 0;
@@ -1519,6 +1524,7 @@ static struct usb_function_instance *acc_alloc_inst(void)
 	struct acc_instance *fi_acc;
 	int err;
 
+
 	fi_acc = kzalloc(sizeof(*fi_acc), GFP_KERNEL);
 	if (!fi_acc)
 		return ERR_PTR(-ENOMEM);
@@ -1545,6 +1551,8 @@ static void acc_free(struct usb_function *f)
 
 int acc_ctrlrequest_configfs(struct usb_function *f,
 			const struct usb_ctrlrequest *ctrl) {
+
+
 	if (f->config != NULL && f->config->cdev != NULL)
 		return acc_ctrlrequest(f->config->cdev, ctrl);
 	else
@@ -1554,6 +1562,7 @@ int acc_ctrlrequest_configfs(struct usb_function *f,
 static struct usb_function *acc_alloc(struct usb_function_instance *fi)
 {
 	struct acc_dev *dev = get_acc_dev();
+
 
 	dev->function.name = "accessory";
 	dev->function.strings = acc_strings,

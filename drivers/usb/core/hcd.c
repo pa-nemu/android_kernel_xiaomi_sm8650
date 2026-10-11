@@ -2841,6 +2841,7 @@ int usb_add_hcd(struct usb_hcd *hcd,
 			goto err_usb_phy_roothub_power_on;
 	}
 
+
 	dev_info(hcd->self.controller, "%s\n", hcd->product_desc);
 
 	switch (authorized_default) {

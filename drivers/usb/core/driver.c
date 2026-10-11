@@ -393,9 +393,11 @@ static int usb_probe_interface(struct device *dev)
 		intf->needs_altsetting0 = 0;
 	}
 
+
 	error = driver->probe(intf, id);
-	if (error)
+	if (error) {
 		goto err;
+	}	
 
 	intf->condition = USB_INTERFACE_BOUND;
 
@@ -701,6 +703,7 @@ int usb_match_one_id_intf(struct usb_device *dev,
 	if ((id->match_flags & USB_DEVICE_ID_MATCH_INT_NUMBER) &&
 	    (id->bInterfaceNumber != intf->desc.bInterfaceNumber))
 		return 0;
+
 
 	return 1;
 }
