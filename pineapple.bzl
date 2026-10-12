@@ -91,7 +91,6 @@ def define_pineapple():
         "drivers/iommu/qcom_iommu_util.ko",
         "drivers/irqchip/msm_show_resume_irq.ko",
         "drivers/irqchip/qcom-pdc.ko",
-        "drivers/leds/leds-qpnp-vibrator-ldo.ko",
         "drivers/leds/leds-qti-flash.ko",
         "drivers/leds/leds-qti-tri-led.ko",
         "drivers/mailbox/msm_qmp.ko",
